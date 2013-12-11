@@ -9,9 +9,11 @@
 #include "guiutil.h"
 #include "intro.h"
 #include "optionsmodel.h"
-#include "paymentserver.h"
 #include "splashscreen.h"
+#ifdef ENABLE_WALLET
+#include "paymentserver.h"
 #include "walletmodel.h"
+#endif
 
 #include "init.h"
 #include "main.h"
@@ -210,11 +212,13 @@ int main(int argc, char *argv[])
     QTranslator qtTranslatorBase, qtTranslator, translatorBase, translator;
     initTranslations(qtTranslatorBase, qtTranslator, translatorBase, translator);
 
+#ifdef ENABLE_WALLET
     // Do this early as we don't want to bother initializing if we are just calling IPC
     // ... but do it after creating app and setting up translations, so errors are
     // translated properly.
     if (PaymentServer::ipcSendCommandLine(argc, argv))
         exit(0);
+#endif
 
     // Now that translations are initialized check for errors and allow a translatable error message
     if (fMissingDatadir) {
@@ -227,9 +231,11 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+#ifdef ENABLE_WALLET
     // Start up the payment server early, too, so impatient users that click on
     // bitcoin: links repeatedly have their payment requests routed to this process:
     PaymentServer* paymentServer = new PaymentServer(&app);
+#endif
 
     // User language is set up: pick a data directory
     Intro::pickDataDirectory(isaTestNet);
@@ -297,15 +303,17 @@ int main(int argc, char *argv[])
 
                 optionsModel.Upgrade(); // Must be done after AppInit2
 
+#ifdef ENABLE_WALLET
                 PaymentServer::LoadRootCAs();
                 paymentServer->setOptionsModel(&optionsModel);
+#endif
 
                 if (splashref)
                     splash.finish(&window);
 
                 ClientModel clientModel(&optionsModel);
                 window.setClientModel(&clientModel);
-
+#ifdef ENABLE_WALLET
                 WalletModel *walletModel = 0;
                 if(pwalletMain)
                     walletModel = new WalletModel(pwalletMain, &optionsModel);
@@ -315,6 +323,7 @@ int main(int argc, char *argv[])
                     window.addWallet("~Default", walletModel);
                     window.setCurrentWallet("~Default");
                 }
+#endif
 
                 // If -min option passed, start window minimized.
                 if(GetBoolArg("-min", false))
@@ -326,6 +335,7 @@ int main(int argc, char *argv[])
                     window.show();
                 }
 
+#ifdef ENABLE_WALLET
                 // Now that initialization/startup is done, process any command-line
                 // bitcoin: URIs or payment requests:
                 QObject::connect(paymentServer, SIGNAL(receivedPaymentRequest(SendCoinsRecipient)),
@@ -340,14 +350,17 @@ int main(int argc, char *argv[])
                 QObject::connect(paymentServer, SIGNAL(message(QString,QString,unsigned int)),
                                  guiref, SLOT(message(QString,QString,unsigned int)));
                 QTimer::singleShot(100, paymentServer, SLOT(uiReady()));
+#endif
 
                 app.exec();
 
                 window.hide();
                 window.setClientModel(0);
-                window.removeAllWallets();
                 guiref = 0;
+#ifdef ENABLE_WALLET
+                window.removeAllWallets();
                 delete walletModel;
+#endif
             }
             // Shutdown the core and its threads, but don't exit the GUI here
             threadGroup.interrupt_all();

@@ -613,10 +613,6 @@ if test x$enable_wallet != xno; then
 
 else
   AC_MSG_RESULT(no)
-
-  if test "x$use_qt" != "xno"; then
-    AC_MSG_ERROR([Cannot currently build Qt GUI with wallet disabled. Use --without-qt.])
-  fi
 fi
 
 dnl enable ipv6 support

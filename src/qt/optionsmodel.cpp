@@ -14,8 +14,10 @@
 #include "init.h"
 #include "main.h"
 #include "net.h"
+#ifdef ENABLE_WALLET
 #include "wallet.h"
 #include "walletdb.h"
+#endif
 
 #include <QSettings>
 
@@ -58,7 +60,9 @@ void OptionsModel::Init()
     bDisplayAddresses = settings.value("bDisplayAddresses", false).toBool();
     fMinimizeToTray = settings.value("fMinimizeToTray", false).toBool();
     fMinimizeOnClose = settings.value("fMinimizeOnClose", false).toBool();
+#ifdef ENABLE_WALLET
     nTransactionFee = settings.value("nTransactionFee").toLongLong();
+#endif
     language = settings.value("language", "").toString();
     fCoinControlFeatures = settings.value("fCoinControlFeatures", false).toBool();
 
@@ -101,6 +105,7 @@ bool OptionsModel::Upgrade()
 
     settings.setValue("bImportFinished", true);
 
+#ifdef ENABLE_WALLET
     // Move settings from old wallet.dat (if any):
     CWalletDB walletdb(strWalletFile);
 
@@ -145,6 +150,7 @@ bool OptionsModel::Upgrade()
             walletdb.EraseSetting("addrProxy");
         }
     }
+#endif
     ApplyProxySettings();
     Init();
 
@@ -201,8 +207,10 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             else
                 return QVariant(5);
         }
+#ifdef ENABLE_WALLET
         case Fee:
             return QVariant((qint64) nTransactionFee);
+#endif
         case DisplayUnit:
             return QVariant(nDisplayUnit);
         case DisplayAddresses:
@@ -276,11 +284,13 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             successful = ApplyProxySettings();
         }
         break;
+#ifdef ENABLE_WALLET
         case Fee:
             nTransactionFee = value.toLongLong();
             settings.setValue("nTransactionFee", (qint64) nTransactionFee);
             emit transactionFeeChanged(nTransactionFee);
             break;
+#endif
         case DisplayUnit:
             nDisplayUnit = value.toInt();
             settings.setValue("nDisplayUnit", nDisplayUnit);
